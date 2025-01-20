@@ -7,47 +7,47 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up Miniconda
-      uses: conda-incubator/setup-miniconda@v3
-      with:
-        activate-environment: sdrf-pipelines
-        auto-update-conda: true
-        python-version: "3.10"
-        channels: conda-forge,defaults,bioconda
-        environment-file: environment.yml
-        auto-activate-base: false
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: sdrf-pipelines
+          auto-update-conda: true
+          python-version: "3.10"
+          channels: conda-forge,defaults,bioconda
+          environment-file: environment.yml
+          auto-activate-base: false
 
-    - name: Install conda-build
-      run: |
-        conda install conda-build anaconda-client
-      shell: bash -l {0}
+      - name: Install conda-build
+        run: |
+          conda install conda-build anaconda-client
+        shell: bash -l {0}
 
-    - name: Build and install
-      run: |
-        conda info
-        conda build recipe
-        PACKAGE_PATH=$(find /usr/share/miniconda/envs/sdrf-pipelines/conda-bld/noarch/ -name "sdrf-pipelines-*.tar.bz2" | head -n 1)
-        echo "$PACKAGE_PATH"
-        conda install --offline "$PACKAGE_PATH"
-        conda list
-      shell: bash -l {0}
+      - name: Build and install
+        run: |
+          conda info
+          conda build recipe
+          PACKAGE_PATH=$(find /usr/share/miniconda/envs/sdrf-pipelines/conda-bld/noarch/ -name "sdrf-pipelines-*.tar.bz2" | head -n 1)
+          echo "$PACKAGE_PATH"
+          conda install --offline "$PACKAGE_PATH"
+          conda list
+        shell: bash -l {0}
 
-    - name: Test the installed package
-      run: |
-        conda info
-        conda list
-        parse_sdrf --help
-      shell: bash -l {0}
+      - name: Test the installed package
+        run: |
+          conda info
+          conda list
+          parse_sdrf --help
+        shell: bash -l {0}
 
-    - name: Test validation of SDRF file
-      run: |
-        parse_sdrf validate-sdrf --sdrf_file tests/data/reference/PDC000126/PDC000126.sdrf.tsv
-      shell: bash -l {0}
+      - name: Test validation of SDRF file
+        run: |
+          parse_sdrf validate-sdrf --sdrf_file tests/data/reference/PDC000126/PDC000126.sdrf.tsv
+        shell: bash -l {0}
 
-    - name: Test validation of SDRF file with cache only
-      run: |
-        parse_sdrf validate-sdrf --sdrf_file tests/data/reference/PDC000126/PDC000126.sdrf.tsv --use_ols_cache_only
-      shell: bash -l {0}
+      - name: Test validation of SDRF file with cache only
+        run: |
+          parse_sdrf validate-sdrf --sdrf_file tests/data/reference/PDC000126/PDC000126.sdrf.tsv --use_ols_cache_only
+        shell: bash -l {0}
