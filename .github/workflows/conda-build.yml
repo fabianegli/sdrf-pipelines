@@ -39,22 +39,27 @@ jobs:
           echo "Listing outputs..."
           ls -laR /usr/share/miniconda/envs/sdrf-pipelines/conda-bld/noarch/
           echo "sving paths"
-          PACKAGE_PATH=$(find /usr/share/miniconda/envs/sdrf-pipelines/conda-bld/noarch/ -name "sdrf-pipelines-*.tar.bz2" | head -n 1)
-          echo "PACKAGE_PATH: $PACKAGE_PATH"
-          echo "sdrf_pipelines_package=$PACKAGE_PATH" >> "$GITHUB_OUTPUT"
-          # conda install --offline "$PACKAGE_PATH"
+          SDRF_PIPELINES_PACKAGE=$(find /usr/share/miniconda/envs/sdrf-pipelines/conda-bld/noarch/ -name "sdrf-pipelines-*.tar.bz2" | head -n 1)
+          echo "SDRF_PIPELINES_PACKAGE: $SDRF_PIPELINES_PACKAGE"
+          echo "sdrf_pipelines_package=$SDRF_PIPELINES_PACKAGE" >> "$GITHUB_OUTPUT"
+          conda install --offline "$SDRF_PIPELINES_PACKAGE"
           conda list
-  
-      - name: Test the installed package
+
+      - name: Install sdrf_pipelines
+        id: install-sdrf-pipelines
         env:
           SDRF_PIPELINES_PACKAGE: ${{steps.build.outputs.sdrf_pipelines_package}}
         run: |
           echo "SDRF_PIPELINES_PACKAGE: $SDRF_PIPELINES_PACKAGE"
           ls -l "$SDRF_PIPELINES_PACKAGE"
+          conda install --offline "$SDRF_PIPELINES_PACKAGE"
+          conda list
+          
+      - name: Test the installed package
+        run: |
           conda info
           conda list
-          parse_sdrf --help || \
-          conda install --offline "$PACKAGE_PATH"
+          parse_sdrf --help
 
       - name: Test validation of SDRF file
         run: |
