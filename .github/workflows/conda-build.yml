@@ -38,7 +38,6 @@ jobs:
           echo "Build done."
           echo "Listing outputs..."
           ls -laR /usr/share/miniconda/envs/sdrf-pipelines/conda-bld/noarch/
-          ls -laR /usr/share/miniconda/envs/sdrf-pipelines/conda-bld/noarch/sdrf-pipelines-0.0.31-py_0.conda
           echo "sving paths"
           PACKAGE_PATH=$(find /usr/share/miniconda/envs/sdrf-pipelines/conda-bld/noarch/ -name "sdrf-pipelines-*.tar.bz2" | head -n 1)
           echo "PACKAGE_PATH: $PACKAGE_PATH"
