@@ -33,8 +33,8 @@ jobs:
         run: |
           conda info
           echo "Starting build ..."
-          echo "Output will be placed in $(conda build --output recipe)"
-          conda build recipe
+          echo "Output will be placed in $(conda build --package-format .tar.bz2 --output recipe)"
+          conda build --package-format .tar.bz2 recipe
           echo "Build done."
           echo "Listing outputs..."
           ls -laR /usr/share/miniconda/envs/sdrf-pipelines/conda-bld/noarch/
