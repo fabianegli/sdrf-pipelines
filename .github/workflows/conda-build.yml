@@ -5,7 +5,11 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    outputs:
+      sdrf_pipelines_package: ${{ steps.build.outputs.sdrf_pipelines_package }}
+    defaults:
+      run:
+        shell: bash -l {0}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -23,31 +27,33 @@ jobs:
       - name: Install conda-build
         run: |
           conda install conda-build anaconda-client
-        shell: bash -l {0}
 
-      - name: Build and install
+      - name: Build
+        id: build
         run: |
           conda info
           conda build recipe
           PACKAGE_PATH=$(find /usr/share/miniconda/envs/sdrf-pipelines/conda-bld/noarch/ -name "sdrf-pipelines-*.tar.bz2" | head -n 1)
-          echo "$PACKAGE_PATH"
-          conda install --offline "$PACKAGE_PATH"
+          echo "PACKAGE_PATH: $PACKAGE_PATH"
+          echo "sdrf_pipelines_package=$PACKAGE_PATH" >> "$GITHUB_OUTPUT"
+          # conda install --offline "$PACKAGE_PATH"
           conda list
-        shell: bash -l {0}
-
+  
       - name: Test the installed package
+        env:
+          SDRF_PIPELINES_PACKAGE: ${{steps.build.outputs.sdrf_pipelines_package}}
         run: |
+          echo "SDRF_PIPELINES_PACKAGE: $SDRF_PIPELINES_PACKAGE"
+          ls -l "$SDRF_PIPELINES_PACKAGE"
           conda info
           conda list
-          parse_sdrf --help
-        shell: bash -l {0}
+          parse_sdrf --help || \
+          conda install --offline "$PACKAGE_PATH"
 
       - name: Test validation of SDRF file
         run: |
           parse_sdrf validate-sdrf --sdrf_file tests/data/reference/PDC000126/PDC000126.sdrf.tsv
-        shell: bash -l {0}
 
       - name: Test validation of SDRF file with cache only
         run: |
           parse_sdrf validate-sdrf --sdrf_file tests/data/reference/PDC000126/PDC000126.sdrf.tsv --use_ols_cache_only
-        shell: bash -l {0}
