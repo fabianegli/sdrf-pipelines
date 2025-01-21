@@ -21,7 +21,7 @@ jobs:
           auto-update-conda: true
           python-version: "3.10"
           channels: conda-forge,bioconda,defaults
-          environment-file: environment.yaml
+          environment-file: environment.yml
           auto-activate-base: false
 
       - name: Install conda-build
