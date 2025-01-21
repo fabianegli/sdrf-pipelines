@@ -32,7 +32,7 @@ jobs:
         id: build
         run: |
           conda info
-          conda build recipe
+          conda build recipe --output
           ls -laR /usr/share/miniconda/envs/sdrf-pipelines/conda-bld/noarch/
           PACKAGE_PATH=$(find /usr/share/miniconda/envs/sdrf-pipelines/conda-bld/noarch/ -name "sdrf-pipelines-*.tar.bz2" | head -n 1)
           echo "PACKAGE_PATH: $PACKAGE_PATH"
