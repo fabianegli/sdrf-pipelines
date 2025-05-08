@@ -552,28 +552,18 @@ class OlsClient:
         logger.debug("OLS select returned empty response for %s", name)
         return None
 
-    def cache_search(self, term: str, ontology: str | None, full_search: bool = False) -> list[dict[str, str]]:
+    def cache_search(self, term: str, ontology: str | None) -> list[dict[str, str]]:
         """
         Search a term in cache files and return them as list.
 
         Parameters:
             term (str): The name of the term
             ontology (str): The name of the ontology
-            full_search (bool): Whether to perform a full search
 
         Returns:
             list: A list of terms found
         """
-        is_cached = False
-        if ontology is not None:
-            for cache_ontologies in self.ontologies:
-                if cache_ontologies.lower() == ontology.lower():
-                    is_cached = True
-                    break
-        if not is_cached and not full_search:
-            return []
-
-        if ontology is not None:
+        if ontology:
             # Query for case-insensitive search and ensure all fields are cast to string
             duckdb_conn = duckdb.execute(
                 """SELECT CAST(accession AS VARCHAR) AS accession,
