@@ -166,6 +166,8 @@ class TrailingWhitespaceValidator(SDRFValidator):
                             error_type=logging.ERROR,
                         )
                     )
+        else:
+            raise NotImplementedError(f"Can not validate trailing spaces for type {type(value)}.")
 
         return errors
 
