@@ -1,4 +1,5 @@
 import re
+from functools import cache
 from pathlib import Path
 
 import defusedxml.ElementTree as et
@@ -78,6 +79,7 @@ class UnimodDatabase:
         self._get_elements(node)
         self._get_modifications(node)
 
+    @cache
     def search_mods_by_keyword(self, keyword: str | None = None):
         found_list = self.modifications
         if keyword is not None and len(keyword) > 0:
@@ -131,6 +133,7 @@ class UnimodDatabase:
             mod = PostTranslationalModification(ontology_term, ma["delta_composition"], sites, ma["delta_mono_mass"])
             self.modifications.append(mod)
 
+    @cache
     def get_by_accession(self, accession):
         for mod in self.modifications:
             if mod.get_accession() == accession:

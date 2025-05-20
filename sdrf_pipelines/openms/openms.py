@@ -11,6 +11,7 @@ parse_sdrf convert-openms \
 import logging
 import re
 from collections import Counter
+from functools import cache
 
 import pandas as pd
 
@@ -192,6 +193,7 @@ TMT_PLEXES = {
 UNIMOD_DB = UnimodDatabase()
 
 
+@cache
 def unimod_to_omsmod(m):
     """Convert UNIMOD modifications to OpenMS notation."""
 
