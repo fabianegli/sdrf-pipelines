@@ -5,6 +5,7 @@ from sdrf_pipelines.openms.openms import (
     get_openms_file_name,
     infer_tmtplex,
     parse_tolerance,
+    unimod_to_omsmod,
 )
 
 test_functions = [
@@ -26,6 +27,7 @@ def test_get_openms_file_name(input_file, expected_file, extension):
 
 
 test_tol_string = [
+    # (input_str, expected_tol, expected_unit)
     ("10ppm", "10", "ppm"),
     ("10 ppm", "10", "ppm"),
     ("10 ppm ", "10", "ppm"),
@@ -52,3 +54,20 @@ def test_tmt_label_inference_full_plexes(plex_name):
 @pytest.mark.parametrize("plex_name", TMT_PLEXES)
 def test_tmt_label_inference_from_incomplete_plexes(plex_name):
     assert plex_name == infer_tmtplex(TMT_PLEXES[plex_name])
+
+
+UNIMOD_TESTCASES = [
+    # (unimod, expected_omsmod, expected_warnings)
+    ("NT=Carbamidomethyl;TA=C;MT=fixed;AC=UNIMOD:4", "Carbamidomethyl (C)", []),
+    ("NT=Oxidation;MT=variable;TA=M;AC=UNIMOD:35", "Oxidation (M)", []),
+    (
+        "NT=Acetyl;AC=UNIMOD:67;PP=Protein N-term;MT=variable",
+        "Acetyl (Protein N-term)",
+        ["Warning no TA= specified. Setting to N-term or C-term if possible."],
+    ),
+]
+
+
+@pytest.mark.parametrize("unimod,expected_omsmod,expected_warnings", UNIMOD_TESTCASES)
+def test_unimod_to_omsmod(unimod, expected_omsmod, expected_warnings):
+    assert unimod_to_omsmod(unimod) == (expected_omsmod, expected_warnings)

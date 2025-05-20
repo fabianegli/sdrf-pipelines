@@ -189,11 +189,72 @@ TMT_PLEXES = {
 }
 
 
+UNIMOD_DB = UnimodDatabase()
+
+
+def unimod_to_omsmod(m):
+    """Convert UNIMOD modifications to OpenMS notation."""
+
+    if "AC=UNIMOD" not in m and "AC=Unimod" not in m:
+        raise ValueError("only UNIMOD modifications supported. " + m)
+
+    warning_messages = []
+
+    name = re.search("NT=(.+?)(;|$)", m).group(1)
+    name = name.capitalize()
+
+    accession = re.search("AC=(.+?)(;|$)", m).group(1)
+    ptm = UNIMOD_DB.get_by_accession(accession)
+    if ptm is not None:
+        name = ptm.get_name()
+
+    # workaround for missing PP in some sdrf TODO: fix in sdrf spec?
+    if re.search("PP=(.+?)(;|$)", m) is None:
+        pp = "Anywhere"
+    else:
+        pp = re.search("PP=(.+?)(;|$)", m).group(
+            1
+        )  # one of [Anywhere, Protein N-term, Protein C-term, Any N-term, Any C-term
+
+    ta = ""
+    if re.search("TA=(.+?)(;|$)", m) is None:  # TODO: missing in sdrf.
+        warning_message = "Warning no TA= specified. Setting to N-term or C-term if possible."
+        warning_messages.append(warning_message)
+        if "C-term" in pp:
+            ta = "C-term"
+        elif "N-term" in pp:
+            ta = "N-term"
+        else:
+            warning_message = "Reassignment not possible. Skipping."
+            warning_messages.append(warning_message)
+    else:
+        ta = re.search("TA=(.+?)(;|$)", m).group(1)  # target amino-acid
+    aa = ta.split(",")  # multiply target site e.g., S,T,Y including potentially termini "C-term"
+
+    if pp in ("Protein N-term", "Protein C-term"):
+        for a in aa:
+            if a in ("C-term", "N-term"):  # no site specificity
+                oms_mod = name + " (" + pp + ")"  # any Protein N/C-term
+            else:
+                oms_mod = name + " (" + pp + " " + a + ")"  # specific Protein N/C-term
+    elif pp in ("Any N-term", "Any C-term"):
+        pp = pp.replace("Any ", "")  # in OpenMS we just use N-term and C-term
+        for a in aa:
+            if a in ("C-term", "N-term"):  # no site specificity
+                oms_mod = name + " (" + pp + ")"  # any N/C-term
+            else:
+                oms_mod = name + " (" + pp + " " + a + ")"  # specific N/C-term
+    else:  # Anywhere in the peptide
+        for a in aa:
+            oms_mod = name + " (" + a + ")"  # specific site in peptide
+
+    return oms_mod, warning_messages
+
+
 class OpenMS:
     def __init__(self) -> None:
         super().__init__()
         self.warnings: dict[str, int] = {}
-        self._unimod_database = UnimodDatabase()
         # Hardcode enzymes from OpenMS
         self.enzymes = {
             "Glutamyl endopeptidase": "glutamyl endopeptidase",
@@ -234,63 +295,13 @@ class OpenMS:
         self.silac3 = {"silac light": 1, "silac medium": 2, "silac heavy": 3}
         self.silac2 = {"silac light": 1, "silac heavy": 2}
 
-    # convert modifications in sdrf file to OpenMS notation
     def openms_ify_mods(self, sdrf_mods):
         oms_mods = []
-
         for m in sdrf_mods:
-            if "AC=UNIMOD" not in m and "AC=Unimod" not in m:
-                raise ValueError("only UNIMOD modifications supported. " + m)
-
-            name = re.search("NT=(.+?)(;|$)", m).group(1)
-            name = name.capitalize()
-
-            accession = re.search("AC=(.+?)(;|$)", m).group(1)
-            ptm = self._unimod_database.get_by_accession(accession)
-            if ptm is not None:
-                name = ptm.get_name()
-
-            # workaround for missing PP in some sdrf TODO: fix in sdrf spec?
-            if re.search("PP=(.+?)(;|$)", m) is None:
-                pp = "Anywhere"
-            else:
-                pp = re.search("PP=(.+?)(;|$)", m).group(
-                    1
-                )  # one of [Anywhere, Protein N-term, Protein C-term, Any N-term, Any C-term
-
-            ta = ""
-            if re.search("TA=(.+?)(;|$)", m) is None:  # TODO: missing in sdrf.
-                warning_message = "Warning no TA= specified. Setting to N-term or C-term if possible."
+            oms_mod, warning_messages = unimod_to_omsmod(m)
+            oms_mods.append(oms_mod)
+            for warning_message in warning_messages:
                 self.warnings[warning_message] = self.warnings.get(warning_message, 0) + 1
-                if "C-term" in pp:
-                    ta = "C-term"
-                elif "N-term" in pp:
-                    ta = "N-term"
-                else:
-                    warning_message = "Reassignment not possible. Skipping."
-                    # print(warning_message + " "+ m)
-                    self.warnings[warning_message] = self.warnings.get(warning_message, 0) + 1
-            else:
-                ta = re.search("TA=(.+?)(;|$)", m).group(1)  # target amino-acid
-            aa = ta.split(",")  # multiply target site e.g., S,T,Y including potentially termini "C-term"
-
-            if pp in ("Protein N-term", "Protein C-term"):
-                for a in aa:
-                    if a in ("C-term", "N-term"):  # no site specificity
-                        oms_mods.append(name + " (" + pp + ")")  # any Protein N/C-term
-                    else:
-                        oms_mods.append(name + " (" + pp + " " + a + ")")  # specific Protein N/C-term
-            elif pp in ("Any N-term", "Any C-term"):
-                pp = pp.replace("Any ", "")  # in OpenMS we just use N-term and C-term
-                for a in aa:
-                    if a in ("C-term", "N-term"):  # no site specificity
-                        oms_mods.append(name + " (" + pp + ")")  # any N/C-term
-                    else:
-                        oms_mods.append(name + " (" + pp + " " + a + ")")  # specific N/C-term
-            else:  # Anywhere in the peptide
-                for a in aa:
-                    oms_mods.append(name + " (" + a + ")")  # specific site in peptide
-
         return ",".join(oms_mods)
 
     def openms_convert(
